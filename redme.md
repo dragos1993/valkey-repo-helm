@@ -31,23 +31,35 @@ after install, or `templates/NOTES.txt`.
 ## Switching Valkey to registry.redhat.io later
 
 By default `valkey.image` points at the public `docker.io/valkey/valkey:8`
-image so this works without any registry login. To use
-`registry.redhat.io/rhel10/valkey-8:1784784603` instead, once you have a
-registry.redhat.io service account:
+image so this works without any registry login. `registry.redhat.io`
+requires authenticated pulls, so switching to
+`registry.redhat.io/rhel10/valkey-8:1784784603` needs two things once you
+have a registry.redhat.io service account:
 
-```bash
-helm upgrade --install valkey-app . \
-  -n <your-namespace> \
-  -f ../valkey-repo-values/values-dev.yaml \
-  --set valkey.image=registry.redhat.io/rhel10/valkey-8:1784784603 \
-  --set valkey.imagePullSecret.create=true \
-  --set-file valkey.imagePullSecret.dockerconfigjson=./auth.json
-```
+1. Create the pull secret directly in-cluster (not via a values file, so
+   credentials never touch git):
 
-`auth.json` is the docker/podman `auth.json`/`config.json` you get from
-`podman login registry.redhat.io`. It's only ever passed at install time
-via `--set-file` — it is never written into any values file or committed
-to git.
+   ```bash
+   oc create secret docker-registry valkey-pull-secret \
+     -n <your-namespace> \
+     --docker-server=registry.redhat.io \
+     --docker-username=<service-account-username> \
+     --docker-password=<service-account-token>
+   ```
+
+2. Point the Deployment at the new image and secret:
+
+   ```bash
+   helm upgrade --install valkey-app . \
+     -n <your-namespace> \
+     -f ../valkey-repo-values/values-dev.yaml \
+     --set valkey.image=registry.redhat.io/rhel10/valkey-8:1784784603 \
+     --set valkey.imagePullSecretName=valkey-pull-secret
+   ```
+
+   (Add an `imagePullSecrets` entry referencing `valkey.imagePullSecretName`
+   to `templates/valkey-deployment.yaml` when you get here — it was
+   removed while unused to keep the chart minimal.)
 
 ## ArgoCD
 

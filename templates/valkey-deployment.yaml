@@ -16,10 +16,6 @@ spec:
         app: {{ .Values.valkey.name }}
         app.kubernetes.io/component: valkey
     spec:
-      {{- if .Values.valkey.imagePullSecret.create }}
-      imagePullSecrets:
-        - name: {{ .Values.valkey.imagePullSecret.name }}
-      {{- end }}
       containers:
         - name: valkey
           image: {{ .Values.valkey.image }}

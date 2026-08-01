@@ -36,10 +36,3 @@ valkey:
       memory: 256Mi
   secret:
     name: valkey-secret
-  # Only used if imagePullSecret.create is true (e.g. once switching to
-  # registry.redhat.io). The actual dockerconfigjson must be passed at
-  # install time via --set-file, never committed to values files.
-  imagePullSecret:
-    create: false
-    name: valkey-pull-secret
-    dockerconfigjson: ""
