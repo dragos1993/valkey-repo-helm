@@ -36,9 +36,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.valkey.secret.name }}
                   key: password
-          volumeMounts:
-            - name: data
-              mountPath: /data
           readinessProbe:
             exec:
               command: ["valkey-cli", "-a", "$(VALKEY_PASSWORD)", "--no-auth-warning", "ping"]
@@ -58,6 +55,3 @@ spec:
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
-      volumes:
-        - name: data
-          emptyDir: {}
