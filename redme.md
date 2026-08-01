@@ -1,0 +1,58 @@
+# valkey-repo-helm
+
+Helm chart that deploys, on OpenShift:
+
+- **Valkey**: `Deployment` + `Service` (`valkey`, port 6379) + `Secret`
+  holding a randomly generated password (generated once via Helm's
+  `lookup` function, never stored in git, stable across `helm upgrade`).
+- **The demo app** (source in [`valkey-app`](https://github.com/dragos1993/valkey-app)):
+  an `ImageStream` + `BuildConfig` that does an in-cluster S2I build from
+  that repo (so no external container registry is needed), plus a
+  `Deployment` (auto-updated via an `image.openshift.io/triggers`
+  annotation whenever a new build completes), a `Service`, and an
+  edge-TLS `Route`.
+
+Chart-level defaults live in `values.yaml`; environment-specific values
+(image tags, git ref, resource sizing, etc.) live in the separate
+[`valkey-repo-values`](https://github.com/dragos1993/valkey-repo-values) repo.
+
+## Install
+
+```bash
+git clone https://github.com/dragos1993/valkey-repo-values.git
+helm upgrade --install valkey-app . \
+  -n <your-namespace> \
+  -f ../valkey-repo-values/values-dev.yaml
+```
+
+Then trigger the first build and roll out the app — see the NOTES printed
+after install, or `templates/NOTES.txt`.
+
+## Switching Valkey to registry.redhat.io later
+
+By default `valkey.image` points at the public `docker.io/valkey/valkey:8`
+image so this works without any registry login. To use
+`registry.redhat.io/rhel10/valkey-8:1784784603` instead, once you have a
+registry.redhat.io service account:
+
+```bash
+helm upgrade --install valkey-app . \
+  -n <your-namespace> \
+  -f ../valkey-repo-values/values-dev.yaml \
+  --set valkey.image=registry.redhat.io/rhel10/valkey-8:1784784603 \
+  --set valkey.imagePullSecret.create=true \
+  --set-file valkey.imagePullSecret.dockerconfigjson=./auth.json
+```
+
+`auth.json` is the docker/podman `auth.json`/`config.json` you get from
+`podman login registry.redhat.io`. It's only ever passed at install time
+via `--set-file` — it is never written into any values file or committed
+to git.
+
+## ArgoCD
+
+This chart plus the values repo are wired together by the `Application`
+manifest in [`argocd-repo`](https://github.com/dragos1993/argocd-repo).
+ArgoCD isn't installed on this sandbox cluster yet, so for now this chart
+is applied directly with `helm install`/`helm upgrade` — see that repo's
+README for how to hook it up once GitOps is available.

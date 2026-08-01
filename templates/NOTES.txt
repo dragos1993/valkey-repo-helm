@@ -1,0 +1,21 @@
+valkey-app has been installed into {{ .Release.Namespace }}.
+
+1. Trigger the first build (the ImageStream starts out empty, so the app
+   Deployment will sit in ImagePullBackOff until this completes):
+
+     oc start-build {{ .Values.app.name }} -n {{ .Release.Namespace }} --follow
+
+2. Once the build finishes, the Deployment rolls out automatically via its
+   image change trigger. Watch it with:
+
+     oc rollout status deployment/{{ .Values.app.name }} -n {{ .Release.Namespace }}
+
+{{- if .Values.app.route.enabled }}
+3. The app is exposed at:
+
+     https://{{ .Values.app.name }}-{{ .Release.Namespace }}.<your-cluster-apps-domain>/
+
+   Get the exact host with:
+
+     oc get route {{ .Values.app.name }} -n {{ .Release.Namespace }} -o jsonpath='{.spec.host}'
+{{- end }}

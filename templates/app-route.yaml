@@ -1,0 +1,20 @@
+{{- if .Values.app.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    {{- include "valkey-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  to:
+    kind: Service
+    name: {{ .Values.app.name }}
+  port:
+    targetPort: http
+  {{- if .Values.app.route.tls }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  {{- end }}
+{{- end }}

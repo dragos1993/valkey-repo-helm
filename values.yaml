@@ -1,0 +1,45 @@
+# Default values for the valkey-app chart.
+# Environment-specific overrides live in the valkey-repo-values repo.
+
+app:
+  name: valkey-app
+  git:
+    uri: https://github.com/dragos1993/valkey-app.git
+    ref: main
+    contextDir: ""
+  # S2I builder ImageStreamTag available in the "openshift" namespace
+  builderImageStreamTag: "python:3.12-ubi9"
+  port: 8080
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  route:
+    enabled: true
+    tls: true
+
+valkey:
+  name: valkey
+  image: docker.io/valkey/valkey:8
+  port: 6379
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  secret:
+    name: valkey-secret
+  # Only used if imagePullSecret.create is true (e.g. once switching to
+  # registry.redhat.io). The actual dockerconfigjson must be passed at
+  # install time via --set-file, never committed to values files.
+  imagePullSecret:
+    create: false
+    name: valkey-pull-secret
+    dockerconfigjson: ""

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.valkey.name }}
+  labels:
+    {{- include "valkey-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+spec:
+  replicas: {{ .Values.valkey.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.valkey.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.valkey.name }}
+        app.kubernetes.io/component: valkey
+    spec:
+      {{- if .Values.valkey.imagePullSecret.create }}
+      imagePullSecrets:
+        - name: {{ .Values.valkey.imagePullSecret.name }}
+      {{- end }}
+      containers:
+        - name: valkey
+          image: {{ .Values.valkey.image }}
+          command:
+            - valkey-server
+            - "--requirepass"
+            - "$(VALKEY_PASSWORD)"
+            - "--save"
+            - ""
+            - "--appendonly"
+            - "no"
+          ports:
+            - name: valkey
+              containerPort: 6379
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.valkey.secret.name }}
+                  key: password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            exec:
+              command: ["valkey-cli", "-a", "$(VALKEY_PASSWORD)", "--no-auth-warning", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["valkey-cli", "-a", "$(VALKEY_PASSWORD)", "--no-auth-warning", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.valkey.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: data
+          emptyDir: {}

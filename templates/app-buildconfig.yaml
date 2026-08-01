@@ -1,0 +1,30 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    {{- include "valkey-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+spec:
+  source:
+    type: Git
+    git:
+      uri: {{ .Values.app.git.uri }}
+      ref: {{ .Values.app.git.ref }}
+    {{- if .Values.app.git.contextDir }}
+    contextDir: {{ .Values.app.git.contextDir }}
+    {{- end }}
+  strategy:
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        namespace: openshift
+        name: {{ .Values.app.builderImageStreamTag }}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "{{ .Values.app.name }}:latest"
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange

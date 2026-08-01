@@ -1,0 +1,7 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    {{- include "valkey-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
